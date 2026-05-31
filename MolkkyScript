@@ -1,1 +1,193 @@
 
+using UdonSharp;
+using UnityEngine;
+using UnityEngine.UI;
+using VRC.Udon;
+
+public class MolkkyGameManager : UdonSharpBehaviour
+{
+    [Header("Scores")]
+    public int player1Score = 0;
+    public int player2Score = 0;
+
+    [Header("Misses")]
+    public int player1Misses = 0;
+    public int player2Misses = 0;
+
+    [Header("Turn")]
+    public int currentPlayer = 1;
+
+    [Header("UI")]
+    public Text player1ScoreText;
+    public Text player2ScoreText;
+    public Text turnText;
+    public Text messageText;
+
+    private bool player1Eliminated = false;
+    private bool player2Eliminated = false;
+    private bool gameOver = false;
+
+    void Start()
+    {
+        UpdateUI();
+    }
+
+    public void ScoreOnePin(int pinNumber)
+    {
+        if (gameOver) return;
+
+        AddScore(pinNumber);
+    }
+
+    public void ScoreMultiplePins(int pinsKnockedDown)
+    {
+        if (gameOver) return;
+
+        AddScore(pinsKnockedDown);
+    }
+
+    public void MissTurn()
+    {
+        if (gameOver) return;
+
+        if (currentPlayer == 1)
+        {
+            player1Misses++;
+
+            if (player1Misses >= 3)
+            {
+                player1Eliminated = true;
+                messageText.text = "Player 1 is eliminated!";
+            }
+        }
+        else
+        {
+            player2Misses++;
+
+            if (player2Misses >= 3)
+            {
+                player2Eliminated = true;
+                messageText.text = "Player 2 is eliminated!";
+            }
+        }
+
+        CheckEliminationWin();
+        NextTurn();
+        UpdateUI();
+    }
+
+    private void AddScore(int points)
+    {
+        if (currentPlayer == 1)
+        {
+            player1Misses = 0;
+            player1Score += points;
+
+            if (player1Score == 50)
+            {
+                WinGame("Player 1 wins!");
+                return;
+            }
+
+            if (player1Score > 50)
+            {
+                player1Score = 25;
+                messageText.text = "Player 1 went over 50! Score reset to 25.";
+            }
+            else
+            {
+                messageText.text = "Player 1 scored " + points + " points!";
+            }
+        }
+        else
+        {
+            player2Misses = 0;
+            player2Score += points;
+
+            if (player2Score == 50)
+            {
+                WinGame("Player 2 wins!");
+                return;
+            }
+
+            if (player2Score > 50)
+            {
+                player2Score = 25;
+                messageText.text = "Player 2 went over 50! Score reset to 25.";
+            }
+            else
+            {
+                messageText.text = "Player 2 scored " + points + " points!";
+            }
+        }
+
+        NextTurn();
+        UpdateUI();
+    }
+
+    private void NextTurn()
+    {
+        if (gameOver) return;
+
+        if (currentPlayer == 1)
+        {
+            currentPlayer = player2Eliminated ? 1 : 2;
+        }
+        else
+        {
+            currentPlayer = player1Eliminated ? 2 : 1;
+        }
+    }
+
+    private void CheckEliminationWin()
+    {
+        if (player1Eliminated && !player2Eliminated)
+        {
+            WinGame("Player 2 wins! Player 1 was eliminated.");
+        }
+        else if (player2Eliminated && !player1Eliminated)
+        {
+            WinGame("Player 1 wins! Player 2 was eliminated.");
+        }
+    }
+
+    private void WinGame(string winMessage)
+    {
+        gameOver = true;
+        messageText.text = winMessage;
+        UpdateUI();
+    }
+
+    public void ResetGame()
+    {
+        player1Score = 0;
+        player2Score = 0;
+
+        player1Misses = 0;
+        player2Misses = 0;
+
+        player1Eliminated = false;
+        player2Eliminated = false;
+
+        currentPlayer = 1;
+        gameOver = false;
+
+        messageText.text = "New Mölkky game started!";
+        UpdateUI();
+    }
+
+    private void UpdateUI()
+    {
+        player1ScoreText.text = "Player 1: " + player1Score + " | Misses: " + player1Misses;
+        player2ScoreText.text = "Player 2: " + player2Score + " | Misses: " + player2Misses;
+
+        if (gameOver)
+        {
+            turnText.text = "Game Over";
+        }
+        else
+        {
+            turnText.text = "Player " + currentPlayer + "'s Turn";
+        }
+    }
+}
